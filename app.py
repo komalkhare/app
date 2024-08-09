@@ -1,51 +1,44 @@
 import streamlit as st
-from db_setup import init_db, get_session, Document, UserHistory, encrypt, decrypt
-from utils import process_document
 import os
+from db_setup import init_db, create_session, add_document, generate_key, get_document
 
-# Initialize database
+# Load the encryption key from an environment variable
+encryption_key = os.getenv("ENCRYPTION_KEY")
+if not encryption_key:
+    raise ValueError("ENCRYPTION_KEY environment variable is not set.")
+
+try:
+    fernet = Fernet(encryption_key)
+except ValueError:
+    raise ValueError("Invalid ENCRYPTION_KEY. It must be a 32-byte URL-safe base64-encoded key.")
+
+# Initialize database and session
 engine = init_db()
-session = get_session(engine)
-encryption_key = os.getenv("ENCRYPTION_KEY", b'mysecretkey')  # Replace with a secure key
+session = create_session(engine)
 
-# Streamlit Application
-st.title("Document Query App")
+# Streamlit UI
+st.title("Document Query Application")
 
-# Document Upload Section
+# File uploader
 uploaded_file = st.file_uploader("Upload a document", type=["pdf", "docx", "txt"])
-if uploaded_file:
-    file_type = uploaded_file.name.split('.')[-1]
-    file_content = process_document(uploaded_file, file_type)
-    encrypted_content = encrypt(file_content, encryption_key)
-    
-    # Store in the database
-    new_doc = Document(filename=uploaded_file.name, filetype=file_type, content=encrypted_content)
-    session.add(new_doc)
-    session.commit()
-    st.success("File uploaded successfully!")
+if uploaded_file is not None:
+    file_content = uploaded_file.read()
+    file_type = uploaded_file.type
+    file_name = uploaded_file.name
 
-# Query Section
+    # Add document to the database
+    add_document(session, file_name, file_type, file_content, encryption_key)
+    st.success(f"File '{file_name}' uploaded and stored securely!")
+
+# Querying section (placeholder)
+st.header("Query Documents")
 query = st.text_input("Enter your query")
-if query:
-    # Search and retrieve relevant info (dummy logic for simplicity)
-    documents = session.query(Document).all()
-    response = ""
-    for doc in documents:
-        decrypted_content = decrypt(doc.content, encryption_key)
-        if query.lower() in decrypted_content.lower():
-            response += f"Found in {doc.filename}: {query}\n"
-    
-    st.write("Response:", response)
+if st.button("Search"):
+    # Placeholder for search functionality
+    st.write("Searching documents...")
 
-    # Store user history
-    user_history = UserHistory(user_id="user1", query=query, response=response)  # Replace with dynamic user ID
-    session.add(user_history)
-    session.commit()
-
-# Download Chat History
-if st.button("Download Chat History"):
-    history = session.query(UserHistory).filter_by(user_id="user1").all()  # Replace with dynamic user ID
-    history_text = "\n".join([f"Query: {h.query}\nResponse: {h.response}" for h in history])
-    
-    st.download_button("Download", history_text, file_name="chat_history.txt")
-
+# Download chat history (placeholder)
+st.header("Download Chat History")
+if st.button("Download"):
+    # Placeholder for downloading chat history
+    st.write("Downloading chat history...")
