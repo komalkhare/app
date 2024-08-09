@@ -43,8 +43,15 @@ if st.button("Search"):
     # Search through each document's content
     for doc in documents:
         decrypted_content = get_document(session, doc.id, encryption_key)
-        if query.lower() in decrypted_content.decode().lower():
-            results.append(f"Found in {doc.filename}: {decrypted_content.decode()[:200]}...")
+        
+        # Safely decode content with error handling
+        try:
+            content_str = decrypted_content.decode('utf-8')
+        except UnicodeDecodeError:
+            content_str = decrypted_content.decode('utf-8', errors='ignore')
+        
+        if query.lower() in content_str.lower():
+            results.append(f"Found in {doc.filename}: {content_str[:200]}...")
     
     if results:
         for result in results:
