@@ -1,7 +1,8 @@
 import streamlit as st
 import os
-from db_setup import init_db, create_session, add_document, generate_key, get_document
+from db_setup import init_db, create_session, add_document, get_document, Document
 from cryptography.fernet import Fernet
+from sqlalchemy import or_
 
 # Load the encryption key from an environment variable
 encryption_key = os.getenv("ENCRYPTION_KEY")
@@ -31,15 +32,30 @@ if uploaded_file is not None:
     add_document(session, file_name, file_type, file_content, encryption_key)
     st.success(f"File '{file_name}' uploaded and stored securely!")
 
-# Querying section (placeholder)
+# Querying section
 st.header("Query Documents")
 query = st.text_input("Enter your query")
 if st.button("Search"):
-    # Placeholder for search functionality
-    st.write("Searching documents...")
+    # Retrieve all documents from the database
+    documents = session.query(Document).all()
+    results = []
+    
+    # Search through each document's content
+    for doc in documents:
+        decrypted_content = get_document(session, doc.id, encryption_key)
+        if query.lower() in decrypted_content.decode().lower():
+            results.append(f"Found in {doc.filename}: {decrypted_content.decode()[:200]}...")
+    
+    if results:
+        for result in results:
+            st.write(result)
+    else:
+        st.write("No results found.")
 
-# Download chat history (placeholder)
+# Download chat history
 st.header("Download Chat History")
 if st.button("Download"):
-    # Placeholder for downloading chat history
-    st.write("Downloading chat history...")
+    chat_history = "Chat history is a placeholder. Implement chat logging logic."
+    
+    # Create a downloadable text file
+    st.download_button(label="Download", data=chat_history, file_name="chat_history.txt")
