@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 from db_setup import init_db, create_session, add_document, generate_key, get_document
+from cryptography.fernet import Fernet
 
 # Load the encryption key from an environment variable
 encryption_key = os.getenv("ENCRYPTION_KEY")
